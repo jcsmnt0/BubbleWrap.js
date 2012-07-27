@@ -18,7 +18,14 @@
 var BubbleWrap = function() {
 	// based on method from http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/
 	var getType = function(obj) {
-		switch (obj) {
+		if (isBuiltIn(obj)) return obj.name;
+
+		var typeName = Object.prototype.toString.call(obj);
+		return typeName.substring(typeName.indexOf(' ') + 1, typeName.length - 1);
+	};
+
+	var isBuiltIn = function(thing) {
+		switch (thing) {
 			case Function:
 			case String:
 			case RegExp:
@@ -27,37 +34,65 @@ var BubbleWrap = function() {
 			case Date:
 			case Number:
 			case Boolean:
-				return obj.name;
+				return true;
 		}
 
-		var typeName = Object.prototype.toString.call(obj);
-		return typeName.substring(typeName.indexOf(' ') + 1, typeName.length - 1);
+		return false;
 	};
 
-	var getGetter = function(obj, id) {
-	   return function() { return obj['_' + id]; };
-	};
+	var typeCheck = function(obj, id, val, nullable) {
+		if (!nullable)
+			nullCheck(id, val);
 
-	var getUntypedSetter = function(obj, id) {
-		return function(val) {
-			if (val == null)
-				throw 'Type error: ' + id + ' can\'t be null';
-			obj[id] = val;
-		}
-	};
-
-	var getTypedSetter = function(obj, id) {
 		var type = getType(obj[id]);
+		var valType = getType(val);
 
-		return function(val) {
-			if (val == null)
-				throw 'Type error: ' + id + ' can\'t be null';
+		if (valType !== type)
+			throw 'TypeError: ' + valType + ' ' + val + ' can\'t be assigned to ' + type + ' ' + id;
 
-			var valType = getType(val);
-			if (valType !== type)
-				throw 'Type error: ' + valType + ' ' + val + ' can\'t be assigned to ' + type + ' ' + id;
+		return val;
+	};
+
+	var nullCheck = function(id, val) {
+		if (val === null || val === undefined)
+			throw 'TypeError: non-nullable ' + id + ' ' + 'can\'t be ' + val + '.';
+
+		return val;
+	};
+
+	var constraintCheck = function(obj, id, val, constraint) {
+		if (!constraint(val))
+			throw 'TypeError: ' + val + ' can\'t be assigned to ' + id + ' because it violates a custom constraint.';
+	};
+
+	var createSetter = function(obj, id, modifiers) {
+		constant = arrayHas(modifiers, 'const');
+		nullable = arrayHas(modifiers, 'nullable');
+		untyped = arrayHas(modifiers, 'untyped');
+		constrained = arrayHas(modifiers, 'constrained');
+
+		if (constant) {
+			return function(val) { throw 'TypeError: ' + val + ' can\'t be assigned to const ' + id + '.'; };
+		} else {
+			if (untyped) {
+				if (nullable) {
+					return function(val) { obj['_'+id] = nullCheck(val); };
+				} else {
+					return function(val) { obj['_'+id] = val; };
+				}
+			} else {
+				if (constrained) {
+					return function(val) { obj['_'+id] = constraintCheck(obj, id, val, obj[id]); };
+				} else {
+					return function(val) { obj['_'+id] = typeCheck(obj, id, val, nullable); }
+				}
+			}
 		}
-	}
+	};
+
+	var createGetter = function(obj, id) {
+		return function() { return obj['_'+id]; };
+	};
 
 	var arrayHas = function(arr, obj) {
 		return arr.indexOf(obj) >= 0;
@@ -68,22 +103,22 @@ var BubbleWrap = function() {
 		var sigCount = signatures.length;
 
 		var sigTokens, id, modifiers, setter;
+		var constant, nullable, untyped, constrained;
 
 		for (var sigIndex = 0; sigIndex < sigCount; sigIndex++) {
 			sigTokens = signatures[sigIndex].split(' ');
 			id = sigTokens[sigTokens.length - 1];
 			modifiers = sigTokens.slice(0, sigTokens.length - 1);
 
-			if (arrayHas(modifiers, 'untyped'))
-				setter = getUntypedSetter(obj, id);
-			else
-				setter = getTypedSetter(obj, id);
-
-			Object.defineProperty(obj, '_' + id, { value: obj[id] });
+			Object.defineProperty(obj, '_'+id, {
+				value: (isBuiltIn(obj[id]) || constrained) ? undefined : obj[id],
+				writable: true,
+				enumerable: true
+			});
 
 			Object.defineProperty(obj, id, {
-				set: setter,
-				get: function() { return obj['_' + id]; },
+				set: createSetter(obj, id, modifiers),
+				get: createGetter(obj, id),
 				enumerable: true
 			});
 		}
@@ -95,5 +130,5 @@ var BubbleWrap = function() {
 	return {
 		wrap: wrap,
 		getType: getType
-	}
+	};
 }();
