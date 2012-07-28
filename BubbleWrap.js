@@ -15,112 +15,151 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 // EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-var BubbleWrap = function() {
+var BubbleWrap = (function() {
 	// based on method from http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/
-	var getType = function(obj) {
-		if (isBuiltIn(obj)) return obj.name;
-
-		var typeName = Object.prototype.toString.call(obj);
-		return typeName.substring(typeName.indexOf(' ') + 1, typeName.length - 1);
-	};
-
-	var isBuiltIn = function(thing) {
-		switch (thing) {
-			case Function:
-			case String:
-			case RegExp:
-			case Object:
-			case Array:
-			case Date:
-			case Number:
-			case Boolean:
-				return true;
+	var getType = function(thing) {
+		var type = Object.prototype.toString.call(thing);
+		try {
+		   instanceType = Object.prototype.toString.call(new thing());
+		   if (instanceType !== '[object Object]') type = instanceType;
+		} catch (_) {
+		
 		}
 
-		return false;
+		return type.substring(type.indexOf(' ') + 1, type.length - 1);
 	};
 
-	var typeCheck = function(obj, id, val, nullable) {
-		if (!nullable)
-			nullCheck(id, val);
+	var arrayContains = function(arr, elem) {
+		return arr.indexOf(elem) >= 0;
+	}
 
-		var type = getType(obj[id]);
-		var valType = getType(val);
+	var checkValue = function(id, val, validTypes, constraints) {
+		var valType;
 
-		if (valType !== type)
-			throw 'TypeError: ' + valType + ' ' + val + ' can\'t be assigned to ' + type + ' ' + id;
+		if (validTypes === null) {
+			throw 'TypeError: ' + val + ' can\'t be assigned to constant ' + id + '.';
+		}
 
-		return val;
-	};
-
-	var nullCheck = function(id, val) {
-		if (val === null || val === undefined)
-			throw 'TypeError: non-nullable ' + id + ' ' + 'can\'t be ' + val + '.';
-
-		return val;
-	};
-
-	var constraintCheck = function(obj, id, val, constraint) {
-		if (!constraint(val))
-			throw 'TypeError: ' + val + ' can\'t be assigned to ' + id + ' because it violates a custom constraint.';
-	};
-
-	var createSetter = function(obj, id, modifiers) {
-		constant = arrayHas(modifiers, 'const');
-		nullable = arrayHas(modifiers, 'nullable');
-		untyped = arrayHas(modifiers, 'untyped');
-		constrained = arrayHas(modifiers, 'constrained');
-
-		if (constant) {
-			return function(val) { throw 'TypeError: ' + val + ' can\'t be assigned to const ' + id + '.'; };
-		} else {
-			if (untyped) {
-				if (nullable) {
-					return function(val) { obj['_'+id] = nullCheck(val); };
-				} else {
-					return function(val) { obj['_'+id] = val; };
+		if (validTypes) {
+			valType = getType(val);
+			if (getType(validTypes) === 'Array') {
+				if (!arrayContains(validTypes, valType)) {
+					throw 'TypeError: ' + valType + ' ' + val + ' can\'t be assigned to ' + id +
+						  '. Valid types for ' + id + ' are ' + validTypes.join(', ');
 				}
 			} else {
-				if (constrained) {
-					return function(val) { obj['_'+id] = constraintCheck(obj, id, val, obj[id]); };
-				} else {
-					return function(val) { obj['_'+id] = typeCheck(obj, id, val, nullable); }
+				if (validTypes !== getType(val)) {
+					throw 'TypeError: ' + valType + ' ' + val + ' can\'t be assigned to ' +
+						   validTypes + ' ' + id + '.';
 				}
 			}
 		}
-	};
 
-	var createGetter = function(obj, id) {
-		return function() { return obj['_'+id]; };
-	};
+		var constraint, constraintCount, i;
+		if (constraints) {
+			if (getType(constraints) === 'Array') {
+				for (i = 0; i < constraintCount; i++) {
+					if (!constraints[i](val)) {
+						throw 'TypeError: ' + val + ' can\'t be assigned to ' + id + ' because ' +
+							  'it violates a custom constraint.';
+					}
+				}
+			} else {
+				if (!constraints(val)) {
+					throw 'TypeError: ' + val + ' can\'t be assigned to ' + id + ' because ' +
+						  'it violates a custom constraint.';
+				}
+			}
+		}
+	}
 
-	var arrayHas = function(arr, obj) {
-		return arr.indexOf(obj) >= 0;
-	};
+	var define = function(validTypes, constraints, value) {
+		return {
+			validTypes: validTypes,
+			constraints: constraints,
+			value: value
+		}
+	}
 
 	var wrap = function(obj) {
-		var signatures = Object.keys(obj);
-		var sigCount = signatures.length;
+		var ids = Object.keys(obj), idCount = ids.length;
 
-		var sigTokens, id, modifiers, setter;
-		var constant, nullable, untyped, constrained;
+		var i, id, definition, setter, value, validTypes, validTypeCount;
+		for (i = 0; i < idCount; i++) {
+			id = ids[i];
 
-		for (var sigIndex = 0; sigIndex < sigCount; sigIndex++) {
-			sigTokens = signatures[sigIndex].split(' ');
-			id = sigTokens[sigTokens.length - 1];
-			modifiers = sigTokens.slice(0, sigTokens.length - 1);
+			if (obj.hasOwnProperty(id)) {
+				definition = obj[id];
+				var defType = getType(definition);
 
-			Object.defineProperty(obj, '_'+id, {
-				value: (isBuiltIn(obj[id]) || constrained) ? undefined : obj[id],
-				writable: true,
-				enumerable: true
-			});
+				try {
+					if (definition === new definition().constructor) {
+						if (defType === 'Function' && definition !== Function) {
+							// function value (constant by default)
+							value = definition;
+							setter = (function(obj, id, definition) {
+								return function(val) {
+									checkValue(id, val, null, definition);
+									obj['_' + id] = val;
+								}
+							})(obj, id, definition);
+						} else {
+							// built-in type
+							value = undefined;
+							setter = (function(obj, id, type) {
+								return function(val) {
+									checkValue(id, val, type);
+									obj['_' + id] = val;
+								}
+							})(obj, id, getType(definition));
+						}
+					}
+				} catch (_) {
+					// value or type definition object
+					// (or unsupported type, but I haven't found a way to differentiate those yet)
+					if (getType(definition) === 'Object' && (definition.validTypes || definition.constraints)) {
+						// convert valid types to type strings
+						validTypes = definition.validTypes, validTypeCount = validTypes.length;
+						for (i = 0; i < validTypeCount; i++) {
+							validTypes[i] = getType(validTypes[i]);
+						}
 
-			Object.defineProperty(obj, id, {
-				set: createSetter(obj, id, modifiers),
-				get: createGetter(obj, id),
-				enumerable: true
-			});
+						// type definition object
+						value = definition.value;
+						setter = (function(obj, id, validTypes, constraints) {
+							return function(val) {
+								checkValue(id, val, validTypes, constraints);
+								obj['_' + id] = val;
+							}
+						})(obj, id, validTypes, definition.constraints);
+					} else {
+						value = definition
+						setter = (function(obj, id, type) {
+							return function(val) {
+								checkValue(id, val, type);
+								obj['_' + id] = val;
+							}
+						})(obj, id, getType(definition));
+					}
+				}
+
+				Object.defineProperty(obj, '_' + id, {
+					value: value || definition.value,
+					writable: true
+				});
+
+				delete obj[id];
+
+				Object.defineProperty(obj, id, {
+					set: setter,
+					get: (function(obj, id) {
+						return function() {
+							return obj['_' + id];
+						}
+					})(obj, id),
+					enumerable: true
+				});
+			}
 		}
 
 		return obj;
@@ -131,4 +170,4 @@ var BubbleWrap = function() {
 		wrap: wrap,
 		getType: getType
 	};
-}();
+})()
