@@ -60,6 +60,10 @@ The initial value of `obj.e` is `'default value of obj.e'`, and it can be assign
 ### g:
 `obj.g` is a constant with the value `Math.PI / 2`; it can't be assigned any other value.
 
+Other methods
+-------------
+* `BubbleWrap.getType(thing)`: returns the type of `thing` as a string, using a slight modification to the method from <http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/> (so that e.g. `String` returns `'String'` instead of `'Function'`).
+
 Notes
 -----
 
@@ -68,6 +72,7 @@ Notes
 * There are a couple constraints that come with the library:
   * `BubbleWrap.constraints.integer`: rejects any value that's not an integer (including NaN and Infinity)
   * `BubbleWrap.constraints.nonNegative`: rejects any value less than 0 (accepts NaN)
+* An existing object can be passed to BubbleWrap.wrap, and the object itself will be modified (no need to assign the return value to a new variable).
 
 Caveats
 -------
