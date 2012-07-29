@@ -1,7 +1,7 @@
 BubbleWrap.js
 =============
 
-BubbleWrap.js is a library that provides runtime type- and constraint-checking for properties of Javascript objects. Basically, it emulates the strong typing found in languages like Java and C++ by checking a value before it's assigned to a variable, and throwing an error if it's the wrong type. It works using the [Object.defineProperty][defineProperty] method of ES5 ([see here for compatibility][compatibility]).
+BubbleWrap.js is a library that provides runtime type- and constraint-checking for properties of Javascript objects. Basically, it emulates the strong typing found in languages like Java and C++ by checking a value before it's assigned to a variable, and throwing an exception if it's the wrong type. It works using the [Object.defineProperty][defineProperty] method of ES5 ([see here for compatibility][compatibility]).
 
   [defineProperty]: https://developer-new.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Object/defineProperty
   [compatibility]: https://developer-new.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Object/defineProperty#Browser_compatibility
@@ -68,7 +68,7 @@ Notes
 -----
 
 * The `validTypes` and `constraints` properties of type definitions can be either single values or arrays.
-* Constraint functions are passed two values: the first is the value that's being assigned to the property, and the second is the name of the property itself (which is helpful for generating useful error messages with `throw` if the value is rejected). If the constraint function returns `true`, the value is accepted; if it returns `false`, it's rejected with a generic error message.
+* Constraint functions are passed two values: the first is the value that's being assigned to the property, and the second is the name of the property itself (which is helpful for generating useful exception messages with `throw` if the value is rejected). If the constraint function returns `true`, the value is accepted; if it returns `false`, it's rejected with a generic message.
 * There are a couple constraints that come with the library:
   * `BubbleWrap.constraints.integer`: rejects any value that's not an integer (including NaN and Infinity)
   * `BubbleWrap.constraints.nonNegative`: rejects any value less than 0 (accepts NaN)
