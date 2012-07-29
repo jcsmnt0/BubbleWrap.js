@@ -16,8 +16,8 @@
 // EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 var BubbleWrap = (function() {
-	var builtInTypes =	   [ Object ,  Function ,  Array ,  Number ,  String ,  Boolean ,  RegExp ,  Date ];
-	var builtInTypeNames = ['Object', 'Function', 'Array', 'Number', 'String', 'Boolean', 'RegExp', 'Date'];
+	var builtInTypes =	   [ Object ,  Function ,  Array ,  Number ,  String ,  Boolean ,  RegExp ,  Date ,  undefined ,  null ];
+	var builtInTypeNames = ['Object', 'Function', 'Array', 'Number', 'String', 'Boolean', 'RegExp', 'Date', 'Undefined', 'Null'];
 
 	var arrayContains = function(arr, elem) {
 		return arr.indexOf(elem) >= 0;
@@ -71,6 +71,15 @@ var BubbleWrap = (function() {
 		}
 	}
 
+	var type = function(typeName) {
+		if (typeName[typeName.length - 1] === '?') {
+			// nullable type
+			return define([typeName.substring(0, typeName.length - 1), null]);
+		} else {
+			return define(typeName);
+		}
+	}
+
 	var define = function(validTypes, constraints, value) {
 		return {
 			validTypes: validTypes,
@@ -82,9 +91,9 @@ var BubbleWrap = (function() {
 	var wrap = function(obj) {
 		var ids = Object.keys(obj), idCount = ids.length;
 
-		var i, id, definition, setter, value, validTypes, validTypeCount;
-		for (i = 0; i < idCount; i++) {
-			id = ids[i];
+		var idIndex, id, definition, setter, value, validTypes, validTypeCount, validTypeIndex;
+		for (idIndex = 0; idIndex < idCount; idIndex++) {
+			id = ids[idIndex];
 
 			if (obj.hasOwnProperty(id)) {
 				definition = obj[id];
@@ -106,11 +115,11 @@ var BubbleWrap = (function() {
 					validTypes = definition.validTypes;
 					if (getType(validTypes) === 'Array') {
 						validTypeCount = validTypes.length;
-						for (i = 0; i < validTypeCount; i++) {
-							if (arrayContains(builtInTypes, validTypes[i]))
-								validTypes[i] = builtInTypeNames[builtInTypes.indexOf(validTypes[i])];
-							else if (getType(validTypes[i]) !== 'String')
-								throw 'BubbleWrap error: ' + validTypes[i] + ' is neither a ' +
+						for (validTypeIndex = 0; validTypeIndex < validTypeCount; validTypeIndex++) {
+							if (arrayContains(builtInTypes, validTypes[validTypeIndex]))
+								validTypes[validTypeIndex] = builtInTypeNames[builtInTypes.indexOf(validTypes[validTypeIndex])];
+							else if (getType(validTypes[validTypeIndex]) !== 'String')
+								throw 'BubbleWrap error: ' + validTypes[validTypeIndex] + ' is neither a ' +
 									  'built-in type nor a type name string.';
 						}
 					} else {
@@ -169,7 +178,7 @@ var BubbleWrap = (function() {
 
 	var constraints = wrap({
 		integer: function(val, id) {
-			if (parseFloat(val) == parseInt(val) && !isNaN(val))
+			if (parseFloat(val) == parseInt(val))
 				return true;
 			throw 'TypeError: ' + val + ' can\'t be assigned to integer ' + id + '.';
 		},
@@ -183,6 +192,7 @@ var BubbleWrap = (function() {
 	return {
 		wrap: wrap,
 		getType: getType,
+		type: type,
 		constraints: constraints
 	};
 })()
