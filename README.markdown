@@ -34,7 +34,6 @@ var obj = BubbleWrap.wrap({
 		validTypes: null,
 		value: Math.PI / 2
 	}
-}
 })
 ```
 
