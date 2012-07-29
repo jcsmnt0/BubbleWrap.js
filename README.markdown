@@ -65,7 +65,8 @@ Notes
 -----
 
 * The `validTypes` and `constraints` properties of type definitions can be either single values or arrays.
-* Constraint functions are passed two values: the first is the value that's being assigned to the property, and the second is the name of the property itself (which is helpful for generating useful error messages with `throw` if the value is rejected). If the constraint function returns `true`, the value is accepted; if it returns `false`, it's rejected with a generic error message. There are also a couple constraints that come with the library:
+* Constraint functions are passed two values: the first is the value that's being assigned to the property, and the second is the name of the property itself (which is helpful for generating useful error messages with `throw` if the value is rejected). If the constraint function returns `true`, the value is accepted; if it returns `false`, it's rejected with a generic error message.
+* There are a couple constraints that come with the library:
   * `BubbleWrap.constraints.integer`: rejects any value that's not an integer (including NaN and Infinity)
   * `BubbleWrap.constraints.nonNegative`: rejects any value less than 0 (accepts NaN)
 
