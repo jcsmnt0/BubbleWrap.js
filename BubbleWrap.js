@@ -33,11 +33,11 @@ var BubbleWrap = (function() {
 	var checkValue = function(id, val, validTypes, constraints) {
 		var valType;
 
-		if (validTypes === null) {
+		if (validTypes === 'Null') {
 			throw 'TypeError: ' + val + ' can\'t be assigned to constant ' + id + '.';
 		}
 
-		if (validTypes) {
+		if (validTypes !== 'Undefined') {
 			valType = getType(val);
 			if (getType(validTypes) === 'Array') {
 				if (!arrayContains(validTypes, valType)) {
@@ -108,7 +108,9 @@ var BubbleWrap = (function() {
 							obj['_' + id] = val;
 						}
 					})(obj, id, definition);
-				} else if (getType(definition) === 'Object' && (definition.validTypes || definition.constraints)) {
+				} else if (getType(definition) === 'Object' &&
+						   (definition.validTypes !== undefined ||
+						   	definition.constraints !== undefined)) {
 					// type definition object
 
 					// convert valid types to type strings
@@ -134,7 +136,7 @@ var BubbleWrap = (function() {
 							obj['_' + id] = val;
 						}
 					})(obj, id, validTypes, definition.constraints);
-				} else if (arrayContains(builtInTypeNames, defType)) {
+				} else if (arrayContains(builtInTypes, definition)) {
 					// built-in type
 					value = undefined;
 					setter = (function(obj, id, type) {
@@ -151,11 +153,11 @@ var BubbleWrap = (function() {
 							checkValue(id, val, type);
 							obj['_' + id] = val;
 						}
-					})(obj, id, getType(definition));
+					})(obj, id, defType);
 				}
 
 				Object.defineProperty(obj, '_' + id, {
-					value: value || definition.value,
+					value: value,
 					writable: true
 				});
 
