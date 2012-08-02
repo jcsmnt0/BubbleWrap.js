@@ -15,8 +15,8 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 // EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-var BubbleWrap = (function() {
-	var builtInTypes =	   [ Object ,  Function ,  Array ,  Number ,  String ,  Boolean ,  RegExp ,  Date ,  undefined ,  null ];
+window.BubbleWrap = (function() {
+	var builtInTypes     = [ Object ,  Function ,  Array ,  Number ,  String ,  Boolean ,  RegExp ,  Date ,  undefined ,  null ];
 	var builtInTypeNames = ['Object', 'Function', 'Array', 'Number', 'String', 'Boolean', 'RegExp', 'Date', 'Undefined', 'Null'];
 
 	var arrayContains = function(arr, elem) {
@@ -188,13 +188,28 @@ var BubbleWrap = (function() {
 			if (val < 0)
 				throw 'TypeError: ' + val + ' can\'t be assigned to non-negative ' + id + '.';
 			return true;
+		},
+		jQuery: function(elemType) {
+		    return function(val, id) {
+		        if (val && (!val.jquery || (elemType && !val.is(elemType))))
+		        	if (val.jquery && val.get(0).tagName)
+		        		throw "A " + val.get(0).tagName.toLowerCase() + ' wrapper can\'t be assigned to jQuery ' +
+		        				elemType + ' wrapper ' + id + '.';
+		        	else
+			            throw val + ' can\'t be assigned to jQuery ' + elemType + ' wrapper ' + id + '.';
+		        return true
+		    }
 		}
-	})
+	});
 
-	return {
-		wrap: wrap,
-		getType: getType,
-		type: type,
-		constraints: constraints
-	};
+	// exported object
+	var O = wrap;
+	O.getType = getType;
+	O.type = type;
+	O.constraints = constraints;
+
+	return O;
 })()
+
+if (!window.O)
+	window.O = window.BubbleWrap

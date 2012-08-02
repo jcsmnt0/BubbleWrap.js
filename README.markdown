@@ -55,7 +55,7 @@ Here's how that example breaks down:
 The initial value of `obj.e` is `'default value of obj.e'`, and it can be assigned `null`, `undefined`, any `String`, or any `HTMLBodyElement` (a Firefox-specific type). Any assignment to `obj.e` will fail if the value being assigned to it is `'this string is not allowed'`, or if `obj.c` is false.
 
 ### f:
-`obj.f` is a function that doubles its input value. Any attempt to change its value will fail.
+`obj.f` is a function that doubles its input value. Functions are constant by default, so `obj.f` can't be changed.
 
 ### g:
 `obj.g` is a constant with the value `Math.PI / 2`; it can't be assigned any other value.
@@ -64,14 +64,17 @@ Other methods
 -------------
 * `BubbleWrap.getType(thing)`: returns the type of `thing` as a string, using a slight modification to the method from <http://perfectionkills.com/instanceof-considered-harmful-or-how-to-write-a-robust-isarray/> (so that e.g. `String` returns `'String'` instead of `'Function'`).
 
+Built-in constraints
+--------------------
+There are a couple constraints that come with the library:
+* `BubbleWrap.constraints.integer`: rejects any value that's not an integer (including NaN and Infinity)
+* `BubbleWrap.constraints.nonNegative`: rejects any value less than 0 (accepts NaN)
+
 Notes
 -----
 
 * The `validTypes` and `constraints` properties of type definitions can be either single values or arrays.
 * Constraint functions are passed two values: the first is the value that's being assigned to the property, and the second is the name of the property itself (which is helpful for generating useful exception messages with `throw` if the value is rejected). If the constraint function returns `true`, the value is accepted; if it returns `false`, it's rejected with a generic message.
-* There are a couple constraints that come with the library:
-  * `BubbleWrap.constraints.integer`: rejects any value that's not an integer (including NaN and Infinity)
-  * `BubbleWrap.constraints.nonNegative`: rejects any value less than 0 (accepts NaN)
 * An existing object can be passed to BubbleWrap.wrap, and the object itself will be modified (no need to assign the return value to a new variable).
 
 Caveats
