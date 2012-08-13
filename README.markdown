@@ -82,4 +82,4 @@ Notes
 Caveats
 -------
 
-A wrapped object can't have a property whose name is another property's name prepended with an underscore (e.g. `propName` and `_propName`).
+Unexpected behavior will probably result if a wrapped object has a property whose name is the same as another property's name prepended with an underscore (e.g. an object with properties `propName` and `_propName` will most likely misbehave).
