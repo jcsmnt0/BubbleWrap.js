@@ -34,7 +34,7 @@ window.BubbleWrap = (function() {
 		var valType;
 
 		if (validTypes === 'Null') {
-			throw 'TypeError: ' + val + ' can\'t be assigned to constant ' + id + '.';
+			throw new TypeError(val + ' can\'t be assigned to constant ' + id + '.');
 		}
 
 		if (validTypes !== 'Undefined') {
@@ -182,11 +182,11 @@ window.BubbleWrap = (function() {
 		integer: function(val, id) {
 			if (parseFloat(val) == parseInt(val))
 				return true;
-			throw 'TypeError: ' + val + ' can\'t be assigned to integer ' + id + '.';
+			throw new TypeError(val + ' can\'t be assigned to integer ' + id + '.');
 		},
 		nonNegative: function(val, id) {
 			if (val < 0)
-				throw 'TypeError: ' + val + ' can\'t be assigned to non-negative ' + id + '.';
+				throw new TypeError(val + ' can\'t be assigned to non-negative ' + id + '.');
 			return true;
 		},
 		jQuery: function(elemType) {
@@ -209,7 +209,7 @@ window.BubbleWrap = (function() {
 	O.constraints = constraints;
 
 	return O;
-})()
+}) ()
 
 if (!window.O)
 	window.O = window.BubbleWrap

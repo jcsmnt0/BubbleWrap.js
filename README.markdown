@@ -9,10 +9,10 @@ BubbleWrap.js is a library that provides runtime type- and constraint-checking f
 Usage
 -----
 
-The `BubbleWrap.wrap` method takes an object as a parameter, and type-safes its properties. The usage looks like this:
+The `BubbleWrap` method takes an object as a parameter, and type-safes its properties. The usage looks like this:
 
 ```javascript
-var obj = BubbleWrap.wrap({
+var obj = BubbleWrap({
 	a: Number,
 	b: BubbleWrap.type('Object?'),
 	c: false,
@@ -67,12 +67,14 @@ Other methods
 Built-in constraints
 --------------------
 There are a couple constraints that come with the library:
-* `BubbleWrap.constraints.integer`: rejects any value that's not an integer (including NaN and Infinity)
-* `BubbleWrap.constraints.nonNegative`: rejects any value less than 0 (accepts NaN)
+* `BubbleWrap.constraints.integer`: only accepts integer values (including `NaN` and `Infinity`)
+* `BubbleWrap.constraints.nonNegative`: only accepts positive values (including `NaN`)
+* `BubbleWrap.constraints.jQuery(<type>)`: only accepts a jQuery object; if `<type>` is a string, only accepts a jQuery wrapper for of the given element type (e.g. `BubbleWrap.constraints.jQuery('div')`)
 
 Notes
 -----
 
+* If there isn't already a global object by the name `O`, it's assigned as a shortcut for `BubbleWrap` (e.g. `O(<obj>)`, `O.constraints.integer`)
 * The `validTypes` and `constraints` properties of type definitions can be either single values or arrays.
 * Constraint functions are passed two values: the first is the value that's being assigned to the property, and the second is the name of the property itself (which is helpful for generating useful exception messages with `throw` if the value is rejected). If the constraint function returns `true`, the value is accepted; if it returns `false`, it's rejected with a generic message.
 * An existing object can be passed to BubbleWrap.wrap, and the object itself will be modified (no need to assign the return value to a new variable).
